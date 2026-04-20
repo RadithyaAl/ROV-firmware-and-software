@@ -1,5 +1,3 @@
-// include/hardware_config.h
-
 #ifndef HARDWARE_CONFIG_H
 #define HARDWARE_CONFIG_H
 
@@ -25,8 +23,6 @@
 #define PWM_FREQ               50
 
 // --- ADC CHANNELS ---
-// The pressure sensor is connected to the ADS1115, not the ESP32.
-// We define the ADS1115 channel here for software reference.
 #define ADS1115_PRESSURE_CH 0 // Connected to A0 on the ADS module
 
-#endif // HARDWARE_CONFIG_H
+#endif

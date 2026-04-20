@@ -54,23 +54,41 @@ bool send_ethernet_data(String data_to_be_sent) {
   }
 }
 
-
-
-bool receive_ethernet_data(int computer_command[]) {
+bool receive_ethernet_data(int ethernet_data[DATA_LENGTH]) { 
+  // 1. Check if any UDP packet has arrived
   int packetSize = Udp.parsePacket();
   
-  if (packetSize) {
-    char packetBuffer[128]; // Buffer to hold the incoming string
+  if (packetSize > 0) {
+    // 2. Create a character buffer to hold the incoming data.
+    // NOTE: Ensure 256 is large enough for your maximum expected string length. 
+    // If your string is longer, increase this number.
+    char packetBuffer[256]; 
     
-    // Read the packet into the buffer
-    int len = Udp.read(packetBuffer, 127);
+    // 3. Read the packet data into the buffer
+    int len = Udp.read(packetBuffer, 255);
     if (len > 0) {
-      packetBuffer[len] = '\0'; // Add a null-terminator to make it a valid C-string
+      packetBuffer[len] = '\0'; // Null-terminate the array so it acts as a valid C-string
     }
 
-    // i want to store return the result into computer_command. the  incoming data from the w5500 may be in "CMD, 1322, 1233, 1200, 2300, 2100, 2100" or in "SERVO, 1232". the CMD and SERVO is the header whcih device that shall be actuated. but the problem is CMD has 7 array value, and SERVO has only 2. is that gonna work?
-    // im just gonna pass this for now.  
- 
+    // 4. Parse the comma-separated string
+    int index = 0;
+    
+    // strtok looks for the first delimiter (",") and grabs the chunk of text before it
+    char* token = strtok(packetBuffer, ","); 
+    
+    // Loop through the string until we run out of tokens or hit our array limit
+    while (token != NULL && index < DATA_LENGTH) {
+      // atoi() converts the text token (e.g., " 124 ") into an actual integer (124)
+      ethernet_data[index] = atoi(token); 
+      
+      index++;
+      
+      // Passing NULL tells strtok to continue from where it left off in the same string
+      token = strtok(NULL, ","); 
     }
-    return true;
+    
+    return true; // Packet successfully received and parsed
+  }
+  
+  return false; // No packet available to read during this loop cycle
 }
