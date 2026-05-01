@@ -17,5 +17,5 @@ float read_depth_sensor(){
   int16_t raw = ads.readADC_SingleEnded(ADS1115_PRESSURE_CH);
   float voltage = ads.computeVolts(raw);
   float depth = voltage * depth_constant;
-  return depth;
+  return voltage;
 }

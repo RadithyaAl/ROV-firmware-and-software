@@ -12,7 +12,6 @@ extern Servo thruster[NUM_THRUSTERS];
 
 // Function declaration
 void init_thruster();
-void set_nav_thruster(int thruster_command[NUM_THRUSTERS-2]);
-void set_ver_thruster(int thruster_command[2]);
+void set_thruster(int thruster_command[NUM_THRUSTERS]);
 
 #endif
