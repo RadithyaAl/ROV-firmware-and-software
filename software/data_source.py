@@ -1,4 +1,5 @@
 import pygame
+import math
 
 pygame.init()
 pygame.joystick.init()
@@ -9,45 +10,162 @@ if pygame.joystick.get_count() == 0:
 j = pygame.joystick.Joystick(0)
 j.init()
 
+ORBIT_SPEED       = 0.40   # Overall orbit speed  (0.0 – 1.0)
+ORBIT_RADIUS_TUNE = 1.0    # Radius scale; sway/yaw = ORBIT_RADIUS_TUNE
+ORBIT_DIRECTION   = 1      # +1 = CCW,  −1 = CW
+ORBIT_SURGE_TRIM  = 0.0    # Fine-trim if range drifts; + = move toward object
+
+RADIUS_STEP = 0.1          # Increment for but_4 / but_5
+SPEED_STEP  = 0.05         # Increment for but_6 / but_7
+RADIUS_MIN  = 0.1
+RADIUS_MAX  = 20.0
+SPEED_MIN   = 0.05
+SPEED_MAX   = 1.0
+
+
 def deadzone(v, t=0.1):
     return 0 if abs(v) < t else v
 
 def normalize(vals):
     m = max(abs(v) for v in vals)
-    return [v/m if m > 1 else v for v in vals]
+    return [v / m if m > 1 else v for v in vals]
+
+
+# ── Persistent state ────────────────────────────────────────────
+g = 0
+h = 0
+
+orbit_active      = False
+orbit_yaw_accum   = 0.0    # accumulated yaw (radians) for 1-orbit stop
+
+prev_hat_x  = 0
+prev_but_0  = 0
+prev_but_1  = 0
+prev_but_2  = 0
+prev_but_3  = 0
+prev_but_4  = 0
+prev_but_5  = 0
+prev_but_6  = 0
+prev_but_7  = 0
+
 
 def get_data():
+    global g, h, prev_hat_x
+    global orbit_active, orbit_yaw_accum
+    global ORBIT_SPEED, ORBIT_RADIUS_TUNE, ORBIT_SURGE_TRIM
+    global prev_but_0, prev_but_1, prev_but_2, prev_but_3
+    global prev_but_4, prev_but_5, prev_but_6, prev_but_7
+
     pygame.event.pump()
 
-    # --- INPUT ---
-    x = deadzone(-j.get_axis(0))
-    y = deadzone(-j.get_axis(1))
+    # ── RAW INPUTS ──────────────────────────────────────────────
+    x   = deadzone(-j.get_axis(0))
+    y   = deadzone(-j.get_axis(1))
     yaw = deadzone(-j.get_axis(2))
 
-    # --- D-PAD ---
+    but_0 = j.get_button(3) #ini emg ketuke wkwkwk jgn diganti
+    but_1 = j.get_button(1)
+    but_2 = j.get_button(2)
+    but_3 = j.get_button(0)
+    but_4 = j.get_button(4)
+    but_5 = j.get_button(5)
+    but_6 = j.get_button(6)
+    but_7 = j.get_button(7)
+
     hat_x, hat_y = j.get_hat(0)
 
-    # --- HORIZONTAL THRUSTERS ---
-    FL = y + x + yaw
-    FR = y - x - yaw
-    BL = -y + x + yaw
-    BR = -y - x - yaw
+    # ── ORBIT START — Button 2, rising edge ─────────────────────
+    if but_2 == 1 and prev_but_2 != 1:
+        orbit_active    = True
+        orbit_yaw_accum = 0.0
+        print(f"[ORBIT] Started  | speed={ORBIT_SPEED:.2f}  radius_tune={ORBIT_RADIUS_TUNE:.2f}")
+
+    # ── ORBIT ABORT — Button 1, rising edge ─────────────────────
+    if but_1 == 1 and prev_but_1 != 1:
+        if orbit_active:
+            orbit_active = False
+            print(f"[ORBIT] Aborted  | yaw_accum={math.degrees(orbit_yaw_accum):.1f}°")
+
+    # ── TUNING — but_4/5: ORBIT_RADIUS_TUNE ─────────────────────
+    if but_4 == 1 and prev_but_4 != 1:
+        ORBIT_RADIUS_TUNE = round(min(ORBIT_RADIUS_TUNE + RADIUS_STEP, RADIUS_MAX), 3)
+        print(f"[TUNE] ORBIT_RADIUS_TUNE = {ORBIT_RADIUS_TUNE:.2f}")
+
+    if but_5 == 1 and prev_but_5 != 1:
+        ORBIT_RADIUS_TUNE = round(max(ORBIT_RADIUS_TUNE - RADIUS_STEP, RADIUS_MIN), 3)
+        print(f"[TUNE] ORBIT_RADIUS_TUNE = {ORBIT_RADIUS_TUNE:.2f}")
+
+    # ── TUNING — but_6/7: ORBIT_SPEED ───────────────────────────
+    if but_6 == 1 and prev_but_6 != 1:
+        ORBIT_SPEED = round(min(ORBIT_SPEED + SPEED_STEP, SPEED_MAX), 3)
+        print(f"[TUNE] ORBIT_SPEED = {ORBIT_SPEED:.2f}")
+
+    if but_7 == 1 and prev_but_7 != 1:
+        ORBIT_SPEED = round(max(ORBIT_SPEED - SPEED_STEP, SPEED_MIN), 3)
+        print(f"[TUNE] ORBIT_SPEED = {ORBIT_SPEED:.2f}")
+
+    # ── THRUSTER MIX ────────────────────────────────────────────
+    if orbit_active:
+        # Orbital commands — mathematically coupled (one radius tuning value)
+        orb_sway  = ORBIT_DIRECTION * ORBIT_SPEED
+        orb_yaw   = ORBIT_DIRECTION * (ORBIT_SPEED / ORBIT_RADIUS_TUNE)
+        orb_surge = ORBIT_SURGE_TRIM
+
+        #           Surge        Sway        Yaw
+        FL =  orb_surge + orb_sway  + orb_yaw
+        FR =  orb_surge - orb_sway  - orb_yaw
+        BL = -orb_surge + orb_sway  - orb_yaw
+        BR = -orb_surge - orb_sway  + orb_yaw
+
+        # Accumulate yaw angle to detect one full orbit (2π rad)
+        orbit_yaw_accum += abs(orb_yaw)
+        if orbit_yaw_accum >= 2 * math.pi:
+            orbit_active = False
+            print(f"[ORBIT] Completed one full orbit  | speed={ORBIT_SPEED:.2f}  radius_tune={ORBIT_RADIUS_TUNE:.2f}")
+
+    else:
+        # Manual mode
+        FL =  y + x + yaw
+        FR =  y - x - yaw
+        BL = -y + x - yaw
+        BR = -y - x + yaw
 
     FL, FR, BL, BR = normalize([FL, FR, BL, BR])
 
-    # --- VERTICAL ---
-    z = hat_y
-    VL = z
-    VR = z
+    # ── VERTICAL (always manual via D-pad) ──────────────────────
+    VL = hat_y
+    VR = hat_y
 
-    # --- SCALE ---
-    a = int(FL * 100)
-    b = int(FR * 100)
-    c = int(BL * 100)
-    d = int(BR * 100)
-    e = int(VL * 100)
-    f = int(VR * 100)
-    g = 0
-    h = 0
+    # ── BUTTON COUNTERS — h (but_0 / but_3) ─────────────────────
+    if but_0 == 1 and prev_but_0 != 1:
+        h = min(h + 10, 180)
+
+    if but_3 == 1 and prev_but_3 != 1:
+        h = max(h - 10, 0)
+
+    # ── HAT COUNTER — g (hat_x) ──────────────────────────────────
+    if hat_x == 1 and prev_hat_x != 1:
+        g += 1
+    elif hat_x == -1 and prev_hat_x != -1:
+        g = max(g - 1, 0)
+
+    # ── STORE PREVIOUS BUTTON STATES ────────────────────────────
+    prev_but_0 = but_0
+    prev_but_1 = but_1
+    prev_but_2 = but_2
+    prev_but_3 = but_3
+    prev_but_4 = but_4
+    prev_but_5 = but_5
+    prev_but_6 = but_6
+    prev_but_7 = but_7
+    prev_hat_x = hat_x
+
+    # ── PWM SCALING ─────────────────────────────────────────────
+    a = int(FL * 500 + 1500)
+    b = int(FR * 500 + 1500)
+    c = int(BL * 500 + 1500)
+    d = int(BR * 500 + 1500)
+    e = int(VL * 500 + 1500)
+    f = int(VR * 500 + 1500)
 
     return [a, b, c, d, e, f, g, h]
