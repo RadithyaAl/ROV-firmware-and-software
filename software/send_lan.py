@@ -2,7 +2,7 @@ import socket
 import time
 from data_source import get_data
 
-HOST = '10.5.35.27'
+HOST = '10.90.230.153'
 PORT = 5000
 
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
