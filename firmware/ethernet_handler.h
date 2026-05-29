@@ -9,6 +9,7 @@
 
 // thrust1, thrust2, thrust3, thrust4, thrust5, thrust6, depth, servo > total 8 commands
 #define DATA_LENGTH 8
+#define ETH_DATA_SIZE 8
 
 // Function declarations
 void init_ethernet();

@@ -66,7 +66,7 @@ bool send_ethernet_data(String data_to_be_sent) {
   }
 }
 
-bool receive_ethernet_data(int ethernet_data[DATA_LENGTH]) { 
+bool receive_ethernet_data(int ethernet_data[ETH_DATA_SIZE]) { 
   // 1. Check if any UDP packet has arrived
   int packetSize = Udp.parsePacket();
   
@@ -84,7 +84,7 @@ bool receive_ethernet_data(int ethernet_data[DATA_LENGTH]) {
     int index = 0;
     char* token = strtok(packetBuffer, ","); 
     
-    while (token != NULL && index < DATA_LENGTH) {
+    while (token != NULL && index < ETH_DATA_SIZE) {
       ethernet_data[index] = atoi(token); 
       index++;
       token = strtok(NULL, ","); 

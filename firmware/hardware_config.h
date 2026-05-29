@@ -22,7 +22,19 @@
 #define PIN_THRUSTER_6         33
 #define PWM_FREQ               50
 
+// --- SERVO PIN ---
+
+#define SERVO_PIN              16
+
 // --- ADC CHANNELS ---
 #define ADS1115_PRESSURE_CH 0 // Connected to A0 on the ADS module
+
+
+// PID Parameters
+
+#define PID_KI                 1
+#define PID_KD                 1
+#define PID_KP                 1
+#define INTEGRAL_MAX          100
 
 #endif

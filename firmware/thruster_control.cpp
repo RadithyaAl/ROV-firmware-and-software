@@ -1,6 +1,5 @@
 #include "thruster_control.h"
 
-// Define the global array here (this creates the actual objects in memory)
 Servo thruster[NUM_THRUSTERS];
 
 void init_thruster() {
@@ -9,17 +8,24 @@ void init_thruster() {
   for (int i = 0; i < NUM_THRUSTERS; i++) {
     thruster[i].setPeriodHertz(PWM_FREQ);
     thruster[i].attach(thruster_pins[i], 1000, 2000); 
+    
+    // Safety: Send neutral signal (1500us) immediately on boot so ESCs can arm
+    thruster[i].writeMicroseconds(1500);
   }
 }
 
-void set_thruster(int thruster_command[NUM_THRUSTERS]){
-  for (int i = 0; i < NUM_THRUSTERS; i++){
-    if (thruster_command[i] > 2000){
-      thruster_command[i] = 2000;
-    } else if (thruster_command[i] < 1000){
-      thruster_command[i] = 1000;
-    }
-    
-    thruster[i].writeMicroseconds(thruster_command[i]);
+// UPDATE: Change this to take the specific thruster index and a single microsecond value
+void set_thruster(int index, int microseconds) {
+  // Guard clause against invalid array indexing
+  if (index < 0 || index >= NUM_THRUSTERS) return; 
+
+  // Constrain the value safely using local variables (doesn't modify global state)
+  if (microseconds > 2000) {
+    microseconds = 2000;
+  } else if (microseconds < 1000) {
+    microseconds = 1000;
   }
+  
+  // Write directly to the target hardware instance
+  thruster[index].writeMicroseconds(microseconds);
 }
