@@ -102,7 +102,7 @@ void vCommunicationsTask(void *pvParameters) {
   while (1) {
     // receive_ethernet_data needs the actual array pointer
     // We pass it directly; ensure this function doesn't block indefinitely without yielding
-    receive_ethernet_data(ethernet_data); 
+    read_serial_data(ethernet_data);  ///debugging
 
     if (xSemaphoreTake(xDataMutex, portMAX_DELAY) == pdTRUE) {
       // Update horizontal thrusters (0 to 3) from fresh ethernet data
@@ -132,4 +132,19 @@ void vCommunicationsTask(void *pvParameters) {
     // Yield control briefly to allow network stack processing (e.g., 10ms)
     vTaskDelay(pdMS_TO_TICKS(10));
   }
+}
+
+
+
+void read_serial_data(int data[]) {
+    if (Serial.available()) {
+        for (int i = 0; i < ETH_DATA_SIZE; i++) {
+            data[i] = Serial.parseInt();
+        }
+
+        // Clear remaining characters
+        while (Serial.available()) {
+            Serial.read();
+        }
+    }
 }
