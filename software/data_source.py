@@ -60,17 +60,16 @@ def get_data():
 
     # ── RAW INPUTS ──────────────────────────────────────────────
     x   = deadzone(-j.get_axis(0))
-    y   = deadzone(-j.get_axis(1))
-    yaw = deadzone(-j.get_axis(2))
-
-    but_0 = j.get_button(3) #ini emg ketuke wkwkwk jgn diganti
-    but_1 = j.get_button(1)
-    but_2 = j.get_button(2)
-    but_3 = j.get_button(0)
-    but_4 = j.get_button(4)
-    but_5 = j.get_button(5)
-    but_6 = j.get_button(6)
-    but_7 = j.get_button(7)
+    y   = deadzone(j.get_axis(1))
+    yaw = deadzone(j.get_axis(2))
+    but_0 = j.get_button(0) #triangle
+    but_1 = j.get_button(1) #O
+    but_2 = j.get_button(2) #X
+    but_3 = j.get_button(3) #petak
+    but_4 = j.get_button(4) #L1
+    but_5 = j.get_button(5) #R1
+    but_6 = j.get_button(6) #L2
+    but_7 = j.get_button(7) #R2
 
     hat_x, hat_y = j.get_hat(0)
 
@@ -125,12 +124,26 @@ def get_data():
 
     else:
         # Manual mode
-        FL =  y + x + yaw
-        FR =  y - x - yaw
-        BL = -y + x - yaw
-        BR = -y - x + yaw
-
-    FL, FR, BL, BR = normalize([FL, FR, BL, BR])
+        FL =  y 
+        FR =  y 
+        BL = -y 
+        BR = -y
+        if x != 0:
+            if x > 0 :
+                FL =  y + x 
+                BL = -y + x 
+            else :
+                FR =  y - x 
+                BR = -y - x
+        if yaw != 0 :
+            if yaw > 0:
+                FL =  y + x + yaw
+                BR = -y - x + yaw
+            else:
+                FR =  y - x - yaw
+                BL = -y + x - yaw
+        
+    FL, FR, BL, BR = normalize([FL, FR, BL, BR])     
 
     # ── VERTICAL (always manual via D-pad) ──────────────────────
     VL = hat_y
@@ -160,11 +173,23 @@ def get_data():
     prev_but_7 = but_7
     prev_hat_x = hat_x
 
+    BL = int(BL * 500 + 1500)
+    BR = int(BR * 500 + 1500)
+    if BL >= 1500:
+        BL = ((BL-1500)*2)+1000
+    else :
+        BL = 1000
+
+    if BR >= 1500:
+        BR = ((BR-1500)*2)+1000
+    else :
+        BR = 1000
+
     # ── PWM SCALING ─────────────────────────────────────────────
     a = int(FL * 500 + 1500)
     b = int(FR * 500 + 1500)
-    c = int(BL * 500 + 1500)
-    d = int(BR * 500 + 1500)
+    c = int(BL)
+    d = int(BR)
     e = int(VL * 500 + 1500)
     f = int(VR * 500 + 1500)
 
