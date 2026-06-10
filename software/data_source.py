@@ -60,7 +60,7 @@ def get_data():
 
     # ── RAW INPUTS ──────────────────────────────────────────────
     x   = deadzone(-j.get_axis(0))
-    y   = deadzone(j.get_axis(1))
+    y   = deadzone(-j.get_axis(1))
     yaw = deadzone(j.get_axis(2))
     but_0 = j.get_button(0) #triangle
     but_1 = j.get_button(1) #O
@@ -128,6 +128,9 @@ def get_data():
         FR =  y 
         BL = -y 
         BR = -y
+        if BL >0 and BR >0 :
+            FL=0
+            FR=0
         if x != 0:
             if x > 0 :
                 FL =  y + x 
@@ -158,9 +161,9 @@ def get_data():
 
     # ── HAT COUNTER — g (hat_x) ──────────────────────────────────
     if hat_x == 1 and prev_hat_x != 1:
-        g += 1
+        g += 10
     elif hat_x == -1 and prev_hat_x != -1:
-        g = max(g - 1, 0)
+        g -= 10
 
     # ── STORE PREVIOUS BUTTON STATES ────────────────────────────
     prev_but_0 = but_0
@@ -173,8 +176,8 @@ def get_data():
     prev_but_7 = but_7
     prev_hat_x = hat_x
 
-    BL = int(BL * 500 + 1500)
-    BR = int(BR * 500 + 1500)
+    BL = int(BL * 350 + 1500)
+    BR = int(BR * 350 + 1500)
     if BL >= 1500:
         BL = ((BL-1500)*2)+1000
     else :
@@ -186,11 +189,15 @@ def get_data():
         BR = 1000
 
     # ── PWM SCALING ─────────────────────────────────────────────
-    a = int(FL * 500 + 1500)
-    b = int(FR * 500 + 1500)
+    a = int(FL * 350 + 1500)
+    b = int(FR * 350 + 1500)
     c = int(BL)
     d = int(BR)
-    e = int(VL * 500 + 1500)
-    f = int(VR * 500 + 1500)
+    e = int(VL * 350 + 1500)
+    f = int(VR * 350 + 1500)
+
+    if g !=0 :
+        e = 1500 + g
+        f = 1500 + g
 
     return [a, b, c, d, e, f, g, h]
