@@ -2,14 +2,14 @@
 
 // --- Network Configuration ---
 // Note: ETH.h requires a Gateway and Subnet when setting a static IP
-IPAddress static_ip(192, 168, 1, 177); 
-IPAddress gateway(192, 168, 1, 1);     // Usually .1 of your subnet
+IPAddress static_ip(192, 168, 42, 177); 
+IPAddress gateway(192, 168, 42, 1);    
 IPAddress subnet(255, 255, 255, 0);    
 
 unsigned int localPort = 8888;  // The port the ROV will listen on
 
-IPAddress remote_ip(192, 168, 1, 100); // Your topside computer's IP
-unsigned int remote_port = 9999;       // Your topside computer's listening port
+IPAddress remote_ip(192, 168, 42, 99); // Your topside computer's IP
+unsigned int remote_port = 8888;       // Your topside computer's listening port
 
 // Create the UDP instance
 WiFiUDP Udp;
@@ -38,7 +38,7 @@ void init_ethernet() {
   ETH.config(static_ip, gateway, subnet);
   
   // Small delay to let the network link negotiate
-  delay(500);
+  delay(3000);
   
   if (ETH.linkUp()) {
     Serial.print("✅ Ethernet Link UP. IP: ");
@@ -46,6 +46,7 @@ void init_ethernet() {
   } else {
     Serial.println("⚠️ Ethernet Link DOWN (Is the tether unplugged?)");
   }
+  delay(3000);
 
   // 5. Start listening for UDP packets
   Udp.begin(localPort);
@@ -60,8 +61,11 @@ bool send_ethernet_data(String data_to_be_sent) {
   
   // 3. Fire the packet over the network! 
   if (Udp.endPacket() == 1) {
+    Serial.print("Data sent to ethernet : ");
+    Serial.print(data_to_be_sent);
     return true;  // Sent successfully
   } else {
+    Serial.println("failed to send data through ethernet");
     return false; // Failed to send
   }
 }
@@ -90,6 +94,13 @@ bool receive_ethernet_data(int ethernet_data[ETH_DATA_SIZE]) {
       token = strtok(NULL, ","); 
     }
     
+    for(int i = 0; i < ETH_DATA_SIZE; i++){
+          Serial.print("ethernet_data_received : ");
+          Serial.print(ethernet_data[i]);
+          Serial.print(" ");
+        }
+        Serial.println();
+
     return true; // Packet successfully received and parsed
   }
   

@@ -10,7 +10,15 @@ void init_thruster() {
     thruster[i].attach(thruster_pins[i], 1000, 2000); 
     
     // Safety: Send neutral signal (1500us) immediately on boot so ESCs can arm
-    thruster[i].writeMicroseconds(1500);
+    // FORCE a 1500us loop for 3-5 seconds so the ESCs can successfully arm
+    Serial.println("Arming ESCs... Keep clear.");
+    for (int seconds = 0; seconds < 4; seconds++) {
+      for (int i = 0; i < 4; i++) {
+        thruster[i].writeMicroseconds(1500);
+      }
+      delay(1000); // Standard block delay is fine here because scheduler hasn't started
+    }
+    Serial.println("ESCs Armed!");
   }
 }
 

@@ -8,6 +8,9 @@
 int thruster_cmd[NUM_THRUSTERS]; 
 int ethernet_data[ETH_DATA_SIZE]; 
 
+// Shared global variable
+int servo_cmd;
+
 // FreeRTOS Mutex Handle to guard the shared arrays
 SemaphoreHandle_t xDataMutex;
 
@@ -22,7 +25,10 @@ void setup() {
   init_ethernet();
   init_servo();
   init_thruster();
-
+  for (int i = 0; i < 4; i++) {
+      ethernet_data[i] = 1500;
+      thruster_cmd[i] = 1500;
+    }
   // Create the Mutex before starting tasks
   xDataMutex = xSemaphoreCreateMutex();
 
@@ -58,82 +64,70 @@ void loop() {
 }
 
 void vPIDControlTask(void *pvParameters) {
-  TickType_t xLastWakeTime = xTaskGetTickCount();
-  const TickType_t xDelay20ms = pdMS_TO_TICKS(20); 
-
-  float previous_error = 0.0f;
-  float integral = 0.0f;
-  const float dt = 0.02f; 
-
+  int local_thruster_command[NUM_THRUSTERS];
+  int local_servo_command;
+  
   while (1) {
-    int local_setpoint = 0;
-    float current_depth = read_depth_sensor();
-
-    // 1. Fetch setpoint quickly
-    if (xSemaphoreTake(xDataMutex, pdMS_TO_TICKS(5)) == pdTRUE) {
-      local_setpoint = ethernet_data[6]; 
+    // 1. Safely copy global data to local variables
+    if (xSemaphoreTake(xDataMutex, portMAX_DELAY) == pdTRUE) {
+      for(int i = 0; i < NUM_THRUSTERS; i++){
+        local_thruster_command[i] = thruster_cmd[i];
+      }
+      local_servo_command = servo_cmd;
       xSemaphoreGive(xDataMutex);
     }
 
-    // 2. Perform PID calculations
-    float current_error = local_setpoint - current_depth;
-    integral += current_error * dt;
-    integral = constrain(integral, -INTEGRAL_MAX, INTEGRAL_MAX); 
-    
-    float derivative = (current_error - previous_error) / dt;
-    float pid_results = (PID_KP * current_error) + (PID_KI * integral) + (PID_KD * derivative);
-    previous_error = current_error;
-
-    // Convert raw controller trends directly into explicit PWM microseconds
-    float raw_pid_out = constrain(pid_results, -500.0f, 500.0f);
-    int motor_pwm_us = 1500 + raw_pid_out;
-    // 3. Stage the vertical thruster instructions quickly
-    if (xSemaphoreTake(xDataMutex, pdMS_TO_TICKS(5)) == pdTRUE) {
-      thruster_cmd[4] = motor_pwm_us;
-      thruster_cmd[5] = motor_pwm_us;
-      xSemaphoreGive(xDataMutex);
+    // 2. Execute hardware control
+    for (int i = 0; i < NUM_THRUSTERS; i++) {
+      set_thruster(i, local_thruster_command[i]);
     }
 
-    vTaskDelayUntil(&xLastWakeTime, xDelay20ms);
+    // 3. Print the status cleanly (Fixed variable names and array bounds)
+    Serial.print("thrusters have been set to: ");
+    for(int j = 0; j < NUM_THRUSTERS; j++){ // Used 'j' and limited to NUM_THRUSTERS
+      Serial.print(local_thruster_command[j]);
+      Serial.print(" ");
+    }
+    Serial.println();
+
+    // set servo
+    set_servo(local_servo_command);
+
+    vTaskDelay(pdMS_TO_TICKS(10));
   }
 }
 
 void vCommunicationsTask(void *pvParameters) {
   while (1) {
-    // receive_ethernet_data needs the actual array pointer
-    // We pass it directly; ensure this function doesn't block indefinitely without yielding
-    read_serial_data(ethernet_data);  ///debugging
+    read_serial_data(ethernet_data);
+
+    if (receive_ethernet_data(ethernet_data)){
+
+    }
 
     if (xSemaphoreTake(xDataMutex, portMAX_DELAY) == pdTRUE) {
-      // Update horizontal thrusters (0 to 3) from fresh ethernet data
-      for (int i = 0; i < 4; i++) {
+      // FIXED: Changed '<=' to '<' to avoid memory corruption
+      for (int i = 0; i < NUM_THRUSTERS; i++) { 
         thruster_cmd[i] = ethernet_data[i];
       }
 
-      // Write ALL thruster outputs to hardware inside the safe zone
-      for (int i = 0; i < NUM_THRUSTERS; i++) {
-        set_thruster(i, thruster_cmd[i]); // Added index 'i' so hardware knows which motor to spin
-      }
-
-      // Handle servo assignment
-      set_servo(ethernet_data[7]);
+      // Index 7 is the 8th item (since index 6 is skipped as you mentioned)
+      servo_cmd = ethernet_data[7]; 
       
       xSemaphoreGive(xDataMutex);
     }
 
-    // shows the received commands. the servos, or thruster notifications are on each cpp files. it calls serial there.
-      for(int i = 0; i < ETH_DATA_SIZE; i++){
-        Serial.print(ethernet_data[i]);
-        Serial.print(" ");
-      }
-      Serial.println();
+    // Show the received raw data packet
+    Serial.print("Received Data: ");
+    for(int i = 0; i < ETH_DATA_SIZE; i++){
+      Serial.print(ethernet_data[i]);
+      Serial.print(" ");
+    }
+    Serial.println();
 
-
-    // Yield control briefly to allow network stack processing (e.g., 10ms)
     vTaskDelay(pdMS_TO_TICKS(10));
   }
 }
-
 
 
 void read_serial_data(int data[]) {
