@@ -62,12 +62,12 @@ def get_data():
     x   = deadzone(-j.get_axis(0))
     y   = deadzone(-j.get_axis(1))
     yaw = deadzone(j.get_axis(2))
-    but_0 = j.get_button(0) #triangle
-    but_1 = j.get_button(1) #O
-    but_2 = j.get_button(2) #X
-    but_3 = j.get_button(3) #petak
-    but_4 = j.get_button(4) #L1
-    but_5 = j.get_button(5) #R1
+    but_0 = j.get_button(0) #triangle + cam
+    but_1 = j.get_button(1) #O mati orbit
+    but_2 = j.get_button(2) #X nyala orbit
+    but_3 = j.get_button(3) #petak -cam
+    but_4 = j.get_button(4) #L1 +rad
+    but_5 = j.get_button(5) #R1 -rad
     but_6 = j.get_button(6) #L2
     but_7 = j.get_button(7) #R2
 
@@ -124,27 +124,32 @@ def get_data():
 
     else:
         # Manual mode
-        FL =  y 
-        FR =  y 
-        BL = -y 
-        BR = -y
-        if BL >0 and BR >0 :
-            FL=0
-            FR=0
-        if x != 0:
-            if x > 0 :
-                FL =  y + x 
-                BL = -y + x 
-            else :
-                FR =  y - x 
-                BR = -y - x
-        if yaw != 0 :
-            if yaw > 0:
-                FL =  y + x + yaw
-                BR = -y - x + yaw
-            else:
-                FR =  y - x - yaw
-                BL = -y + x - yaw
+        FL =  y + x + yaw
+        BR = -y - x + yaw
+        FR =  y - x - yaw
+        BL = -y + x - yaw
+
+        # FL =  y 
+        # FR =  y 
+        # BL = -y 
+        # BR = -y
+        # if BL >0 and BR >0 :
+        #     FL=0
+        #     FR=0
+        # if x != 0:
+        #     if x > 0 :
+        #         FL =  y + x 
+        #         BL = -y + x 
+        #     else :
+        #         FR =  y - x 
+        #         BR = -y - x
+        # if yaw != 0 :
+        #     if yaw > 0:
+        #         FL =  y + x + yaw
+        #         BR = -y - x + yaw
+        #     else:
+        #         FR =  y - x - yaw
+        #         BL = -y + x - yaw
         
     FL, FR, BL, BR = normalize([FL, FR, BL, BR])     
 
@@ -161,9 +166,9 @@ def get_data():
 
     # ── HAT COUNTER — g (hat_x) ──────────────────────────────────
     if hat_x == 1 and prev_hat_x != 1:
-        g += 10
+        g += 5
     elif hat_x == -1 and prev_hat_x != -1:
-        g -= 10
+        g -= 5
 
     # ── STORE PREVIOUS BUTTON STATES ────────────────────────────
     prev_but_0 = but_0
@@ -176,25 +181,25 @@ def get_data():
     prev_but_7 = but_7
     prev_hat_x = hat_x
 
-    BL = int(BL * 350 + 1500)
-    BR = int(BR * 350 + 1500)
-    if BL >= 1500:
-        BL = ((BL-1500)*2)+1000
-    else :
-        BL = 1000
+    BL = int(BL * 250 + 1500)
+    BR = int(BR * 250 + 1500)
+    # if BL >= 1500:
+    #     BL = ((BL-1500)*2)+1000
+    # else :
+    #     BL = 1000
 
-    if BR >= 1500:
-        BR = ((BR-1500)*2)+1000
-    else :
-        BR = 1000
+    # if BR >= 1500:
+    #     BR = ((BR-1500)*2)+1000
+    # else :
+    #     BR = 1000
 
     # ── PWM SCALING ─────────────────────────────────────────────
-    a = int(FL * 350 + 1500)
-    b = int(FR * 350 + 1500)
+    a = int(FL * 250 + 1500)
+    b = int(FR * 250 + 1500)
     c = int(BL)
     d = int(BR)
-    e = int(VL * 350 + 1500)
-    f = int(VR * 350 + 1500)
+    e = int(VL * 250 + 1500)
+    f = int(VR * 250 + 1500)
 
     if g !=0 :
         e = 1500 + g
