@@ -25,7 +25,7 @@ void setup() {
   init_ethernet();
   init_servo();
   init_thruster();
-  for (int i = 0; i < 4; i++) {
+  for (int i = 0; i < NUM_THRUSTERS; i++) {
       ethernet_data[i] = 1500;
       thruster_cmd[i] = 1500;
     }
