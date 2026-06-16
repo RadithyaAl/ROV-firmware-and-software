@@ -62,7 +62,7 @@ def get_data():
     x   = deadzone(-j.get_axis(0))
     y   = deadzone(-j.get_axis(1))
     yaw = deadzone(j.get_axis(2))
-    heave = deadzone(j.get_axis(3))
+    heave = deadzone(-j.get_axis(3))
     but_0 = j.get_button(0) #triangle + cam
     but_1 = j.get_button(1) #O mati orbit
     but_2 = j.get_button(2) #X nyala orbit
