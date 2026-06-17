@@ -90,6 +90,19 @@ void vPIDControlTask(void *pvParameters) {
     }
     Serial.println();
 
+    // 4. Send local_thruster_command to send_ethernet_data(string string); to show that it has been set, but the problem is the local_thruster_command is a array
+    String msg = "";
+
+    for (int i = 0; i < NUM_THRUSTERS; i++) {
+        msg += String(local_thruster_command[i]);
+
+        if (i < NUM_THRUSTERS - 1) {
+            msg += ",";
+        }
+    }
+
+    send_ethernet_data(msg);
+    
     // set servo
     set_servo(local_servo_command);
 

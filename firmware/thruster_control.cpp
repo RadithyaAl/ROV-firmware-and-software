@@ -12,6 +12,7 @@ void init_thruster() {
     // Safety: Send neutral signal (1500us) immediately on boot so ESCs can arm
     // FORCE a 1500us loop for 3-5 seconds so the ESCs can successfully arm
     Serial.println("Arming ESCs... Keep clear.");
+    send_ethernet_data("Arming ESC......");
     for (int seconds = 0; seconds < NUM_THRUSTERS; seconds++) {
       for (int i = 0; i < 4; i++) {
         thruster[i].writeMicroseconds(1500);
@@ -36,4 +37,6 @@ void set_thruster(int index, int microseconds) {
   
   // Write directly to the target hardware instance
   thruster[index].writeMicroseconds(microseconds);
+
+  
 }

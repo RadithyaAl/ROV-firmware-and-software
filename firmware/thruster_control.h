@@ -3,6 +3,7 @@
 
 #include <ESP32Servo.h>
 #include "hardware_config.h" // Ensures NUM_THRUSTERS and PWM_FREQ are known
+#include "ethernet_handler.h"
 
 // Declare the servo array as 'extern' so main.ino can see and control it later
 extern Servo thruster[NUM_THRUSTERS];
