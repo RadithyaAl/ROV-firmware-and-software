@@ -38,7 +38,7 @@ h = 0
 orbit_active      = False
 orbit_yaw_accum   = 0.0    # accumulated yaw (radians) for 1-orbit stop
 
-prev_hat_x  = 0
+prev_hat_y  = 0
 prev_but_0  = 0
 prev_but_1  = 0
 prev_but_2  = 0
@@ -50,7 +50,7 @@ prev_but_7  = 0
 
 
 def get_data():
-    global g, h, prev_hat_x
+    global g, h, prev_hat_y
     global orbit_active, orbit_yaw_accum
     global ORBIT_SPEED, ORBIT_RADIUS_TUNE, ORBIT_SURGE_TRIM
     global prev_but_0, prev_but_1, prev_but_2, prev_but_3
@@ -62,6 +62,7 @@ def get_data():
     x   = deadzone(-j.get_axis(0))
     y   = deadzone(-j.get_axis(1))
     yaw = deadzone(j.get_axis(2))
+    heave = deadzone(-j.get_axis(3))
     but_0 = j.get_button(0) #triangle + cam
     but_1 = j.get_button(1) #O mati orbit
     but_2 = j.get_button(2) #X nyala orbit
@@ -124,10 +125,10 @@ def get_data():
 
     else:
         # Manual mode
-        FL =  y + x + yaw
-        BR = -y - x + yaw
-        FR =  y - x - yaw
-        BL = -y + x - yaw
+        FL =  y - x + yaw
+        BR = -y + x + yaw
+        FR =  y + x - yaw
+        BL = -y - x - yaw
 
         # FL =  y 
         # FR =  y 
@@ -154,8 +155,9 @@ def get_data():
     FL, FR, BL, BR = normalize([FL, FR, BL, BR])     
 
     # ── VERTICAL (always manual via D-pad) ──────────────────────
-    VL = hat_y
-    VR = hat_y
+    VL = heave
+    VR = heave
+    VL, VR = normalize([VL, VR]) 
 
     # ── BUTTON COUNTERS — h (but_0 / but_3) ─────────────────────
     if but_0 == 1 and prev_but_0 != 1:
@@ -165,9 +167,9 @@ def get_data():
         h = max(h - 10, 0)
 
     # ── HAT COUNTER — g (hat_x) ──────────────────────────────────
-    if hat_x == 1 and prev_hat_x != 1:
+    if hat_y == 1 and prev_hat_y != 1:
         g += 5
-    elif hat_x == -1 and prev_hat_x != -1:
+    elif hat_y == -1 and prev_hat_y != -1:
         g -= 5
 
     # ── STORE PREVIOUS BUTTON STATES ────────────────────────────
@@ -179,10 +181,10 @@ def get_data():
     prev_but_5 = but_5
     prev_but_6 = but_6
     prev_but_7 = but_7
-    prev_hat_x = hat_x
+    prev_hat_y = hat_y
 
-    BL = int(BL * 250 + 1500)
-    BR = int(BR * 250 + 1500)
+    BL = int(BL * 400 + 1500)
+    BR = int(BR * 400 + 1500)
     # if BL >= 1500:
     #     BL = ((BL-1500)*2)+1000
     # else :
@@ -194,13 +196,15 @@ def get_data():
     #     BR = 1000
 
     # ── PWM SCALING ─────────────────────────────────────────────
-    a = int(FL * 250 + 1500)
-    b = int(FR * 250 + 1500)
+    a = int(FL * 400 + 1500)
+    b = int(FR * 400 + 1500)
     c = int(BL)
     d = int(BR)
-    e = int(VL * 250 + 1500)
-    f = int(VR * 250 + 1500)
-
+    e = int(VL * 400 + 1500)
+    f = int(VR * 400 + 1500)
+    if yaw !=0 :
+        e = 1500
+        f = 1500
     if g !=0 :
         e = 1500 + g
         f = 1500 + g
